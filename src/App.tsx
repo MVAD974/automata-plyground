@@ -115,6 +115,10 @@ export default function App() {
   const [automaton, setAutomaton] = useState(() => parseAutomaton(definition));
   const [word, setWord] = useState('010');
   const [result, setResult] = useState<string | null>(null);
+  const [stateInput, setStateInput] = useState('');
+  const [fromInput, setFromInput] = useState('');
+  const [toInput, setToInput] = useState('');
+  const [symbolInput, setSymbolInput] = useState('');
   const visRef = useRef<HTMLDivElement>(null);
   const networkRef = useRef<Network | null>(null);
 
@@ -132,13 +136,13 @@ export default function App() {
         height: '350px',
         interaction: { dragNodes: true, dragView: true, selectable: true },
         manipulation: {
-          enabled: true,
+          enabled: false, // disable all manipulation UI (removes pencil/edit button)
           initiallyActive: false,
           addEdge: false,
           addNode: false,
           deleteEdge: false,
           deleteNode: false,
-          editEdge: true, // allow moving edge control points
+          editEdge: false, // do not allow moving edge control points
         },
       });
     }
@@ -189,6 +193,81 @@ export default function App() {
         <div style={{ flex: 2, minWidth: 350 }}>
           <h2>Visualization</h2>
           <div ref={visRef} style={{ border: '1px solid #aaa', borderRadius: 8, background: '#fff', height: 350, minWidth: 320 }} />
+          {/* Add state and transition UI */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 12, justifyContent: 'center', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="State name"
+              value={stateInput}
+              onChange={e => setStateInput(e.target.value)}
+              style={{ padding: '0.5em', width: 100, borderRadius: 6, border: '1px solid #ccc' }}
+            />
+            <button
+              onClick={() => {
+                const state = stateInput.trim();
+                if (state) {
+                  const lines = definition.split(/\r?\n/);
+                  const statesIdx = lines.findIndex(l => l.startsWith('states:'));
+                  if (statesIdx !== -1) {
+                    const parts = lines[statesIdx].split(':');
+                    const statesArr = parts[1].split(',').map(s => s.trim());
+                    if (!statesArr.includes(state)) {
+                      statesArr.push(state);
+                      lines[statesIdx] = `states: ${statesArr.join(',')}`;
+                      const newDef = lines.join('\n');
+                      setDefinition(newDef);
+                      setStateInput('');
+                      setAutomaton(parseAutomaton(newDef));
+                    }
+                  }
+                }
+              }}
+              style={{ padding: '0.5em 1em', borderRadius: 6, background: '#4caf50', color: '#fff', border: 'none', fontWeight: 600 }}
+            >
+              Add State
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8, justifyContent: 'center', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="From"
+              value={fromInput}
+              onChange={e => setFromInput(e.target.value)}
+              style={{ padding: '0.5em', width: 60, borderRadius: 6, border: '1px solid #ccc' }}
+            />
+            <input
+              type="text"
+              placeholder="Symbol"
+              value={symbolInput}
+              onChange={e => setSymbolInput(e.target.value)}
+              style={{ padding: '0.5em', width: 60, borderRadius: 6, border: '1px solid #ccc' }}
+            />
+            <input
+              type="text"
+              placeholder="To"
+              value={toInput}
+              onChange={e => setToInput(e.target.value)}
+              style={{ padding: '0.5em', width: 60, borderRadius: 6, border: '1px solid #ccc' }}
+            />
+            <button
+              onClick={() => {
+                const from = fromInput.trim();
+                const to = toInput.trim();
+                const symbol = symbolInput.trim();
+                if (from && to && symbol) {
+                  const newDef = definition.trim() + `\n${from},${symbol}->${to}`;
+                  setDefinition(newDef);
+                  setFromInput('');
+                  setToInput('');
+                  setSymbolInput('');
+                  setAutomaton(parseAutomaton(newDef));
+                }
+              }}
+              style={{ padding: '0.5em 1em', borderRadius: 6, background: '#1976d2', color: '#fff', border: 'none', fontWeight: 600 }}
+            >
+              Add Transition
+            </button>
+          </div>
           <div style={{ marginTop: 16, color: '#888', fontSize: 14 }}>
             <em>Accept states are green. Start state has a thick border.</em>
           </div>
